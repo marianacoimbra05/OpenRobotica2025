@@ -1,3 +1,6 @@
+#include <dummy.h>
+
+
 const int ReadPin=14;
 const int WritePin=12;
 
@@ -33,16 +36,16 @@ void IRAM_ATTR isr() {
 void setup() {
   // put your setup code here, to run once:
   ledcSetup(MotorR_1, 2000, 10);
-  ledcAttachPin(pin_MotorR_1, MotorR_1)
+  ledcAttachPin(pin_MotorR_1, MotorR_1);
   
   ledcSetup(MotorR_2, 2000, 10);
-  ledcAttachPin(pin_MotorR_2, MotorR_2)
+  ledcAttachPin(pin_MotorR_2, MotorR_2);
 
   ledcSetup(MotorL_1, 2000, 10);
-  ledcAttachPin(pin_MotorL_1, MotorL_1)
+  ledcAttachPin(pin_MotorL_1, MotorL_1);
 
   ledcSetup(MotorL_2, 2000, 10);
-  ledcAttachPin(pin_MotorL_2, MotorL_2)
+  ledcAttachPin(pin_MotorL_2, MotorL_2);
 
   Serial.begin(115200);
 
@@ -80,8 +83,8 @@ void loop() {
 
   delay(5000);
 
-  set_pwm(255, 'F', 'L');
-  set_pwm(255, 'F', 'R');
+  set_pwm(1023, 'F', 'L');
+  set_pwm(1023, 'F', 'R');
 
   delay(5000);
 
@@ -90,8 +93,8 @@ void loop() {
 
   delay(5000);
 
-  set_pwm(255, 'B', 'L');
-  set_pwm(255, 'B', 'R');
+  set_pwm(1023, 'B', 'L');
+  set_pwm(1023, 'B', 'R');
 
   delay(5000);
 
