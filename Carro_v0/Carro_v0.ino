@@ -109,25 +109,25 @@ void set_pwm(int pwm, char dir, char motor){
 
   if( dir == 'F' and motor == 'R' )
   {
-    ledcWrite(MotorR_1 , pwm);
-    ledcWrite(MotorR_2 , 0);
+    ledcWrite(pin_MotorR_1 , pwm);
+    ledcWrite(pin_MotorR_2 , 0);
   }
 
   if( dir == 'F' and motor == 'L' )
   {
-    ledcWrite(MotorL_1 , pwm);
-    ledcWrite(MotorL_2 , 0);
+    ledcWrite(pin_MotorL_1 , pwm);
+    ledcWrite(pin_MotorL_2 , 0);
   }
 
   if( dir == 'B' and motor == 'R' )
   {
-    ledcWrite(MotorR_1 , 0);
-    ledcWrite(MotorR_2 , pwm);
+    ledcWrite(pin_MotorR_1 , 0);
+    ledcWrite(pin_MotorR_2 , pwm);
   }
 
   if( dir == 'B' and motor == 'L' )
   {
-    ledcWrite(MotorL_1 , 0);
-    ledcWrite(MotorL_2 , pwm);
+    ledcWrite(pin_MotorL_1 , 0);
+    ledcWrite(pin_MotorL_2 , pwm);
   }
 }
