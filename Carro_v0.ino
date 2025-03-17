@@ -1,11 +1,19 @@
 const int ReadPin=14;
 const int WritePin=12;
 
-const int MotorR_1 = 16;    
-const int MotorR_2 = 17;  
+const int pin_MotorR_1 = 16;    
+const int pin_MotorR_2 = 17;  
 
-const int MotorL_1 = 18;
-const int MotorL_2 = 19;
+const int pin_MotorL_1 = 18;
+const int pin_MotorL_2 = 19;
+
+const int MotorR_1 = 0;
+const int MotorR_2 = 1;
+
+const int MotorL_1 = 2;
+const int MotorL_2 = 3;
+
+void set_pwm(int pwm, char dir, char motor);
 
 //Interrupts
 struct Button {
@@ -21,46 +29,20 @@ void IRAM_ATTR isr() {
 	button1.pressed = true;
 }
 
-void set_pwm(int pwm, char dir, char motor){
-  //pwm 0 a 255
-  //dir F or B
-  //motor R or L
-
-  if( dir == 'F' and motor == 'R' )
-  {
-    analogWrite(MotorR_1 , pwm);
-    analogWrite(MotorR_2 , 0);
-  }
-
-  if( dir == 'F' and motor == 'L' )
-  {
-    analogWrite(MotorL_1 , pwm);
-    analogWrite(MotorL_2 , 0);
-  }
-
-  if( dir == 'B' and motor == 'R' )
-  {
-    analogWrite(MotorR_1 , 0);
-    analogWrite(MotorR_2 , pwm);
-  }
-
-  if( dir == 'B' and motor == 'L' )
-  {
-    analogWrite(MotorL_1 , 0);
-    analogWrite(MotorL_2 , pwm);
-  }
-}
 
 void setup() {
   // put your setup code here, to run once:
-  pinMode(WritePin, OUTPUT);
-  pinMode(ReadPin, INPUT_PULLDOWN);
+  ledcSetup(MotorR_1, 2000, 10);
+  ledcAttachPin(pin_MotorR_1, MotorR_1)
+  
+  ledcSetup(MotorR_2, 2000, 10);
+  ledcAttachPin(pin_MotorR_2, MotorR_2)
 
-  pinMode(MotorR_1, OUTPUT);
-  pinMode(MotorR_2, OUTPUT);
+  ledcSetup(MotorL_1, 2000, 10);
+  ledcAttachPin(pin_MotorL_1, MotorL_1)
 
-  pinMode(MotorL_1, OUTPUT);
-  pinMode(MotorL_2, OUTPUT);
+  ledcSetup(MotorL_2, 2000, 10);
+  ledcAttachPin(pin_MotorL_2, MotorL_2)
 
   Serial.begin(115200);
 
@@ -121,4 +103,35 @@ void loop() {
 		button1.pressed = false;
 	}
 */
+}
+
+
+void set_pwm(int pwm, char dir, char motor){
+  //pwm 0 a 255
+  //dir F or B
+  //motor R or L
+
+  if( dir == 'F' and motor == 'R' )
+  {
+    ledcWrite(MotorR_1 , pwm);
+    ledcWrite(MotorR_2 , 0);
+  }
+
+  if( dir == 'F' and motor == 'L' )
+  {
+    ledcWrite(MotorL_1 , pwm);
+    ledcWrite(MotorL_2 , 0);
+  }
+
+  if( dir == 'B' and motor == 'R' )
+  {
+    ledcWrite(MotorR_1 , 0);
+    ledcWrite(MotorR_2 , pwm);
+  }
+
+  if( dir == 'B' and motor == 'L' )
+  {
+    ledcWrite(MotorL_1 , 0);
+    ledcWrite(MotorL_2 , pwm);
+  }
 }
