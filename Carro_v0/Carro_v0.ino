@@ -1,5 +1,5 @@
-#include <dummy.h>
 
+#include <driver/ledc.h>
 
 const int ReadPin=14;
 const int WritePin=12;
@@ -35,17 +35,10 @@ void IRAM_ATTR isr() {
 
 void setup() {
   // put your setup code here, to run once:
-  ledcSetup(MotorR_1, 2000, 10);
-  ledcAttachPin(pin_MotorR_1, MotorR_1);
-  
-  ledcSetup(MotorR_2, 2000, 10);
-  ledcAttachPin(pin_MotorR_2, MotorR_2);
-
-  ledcSetup(MotorL_1, 2000, 10);
-  ledcAttachPin(pin_MotorL_1, MotorL_1);
-
-  ledcSetup(MotorL_2, 2000, 10);
-  ledcAttachPin(pin_MotorL_2, MotorL_2);
+  ledcAttachChannel(pin_MotorR_1, 2000, 10, MotorR_1);
+  ledcAttachChannel(pin_MotorR_2, 2000, 10, MotorR_2);
+  ledcAttachChannel(pin_MotorL_1, 2000, 10, MotorL_1);
+  ledcAttachChannel(pin_MotorL_2, 2000, 10, MotorL_2);
 
   Serial.begin(115200);
 
