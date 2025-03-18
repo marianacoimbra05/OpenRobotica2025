@@ -1,13 +1,10 @@
-
-#include <driver/ledc.h>
-
 const int ReadPin=14;
 const int WritePin=12;
 
 const int pin_MotorR_1 = 16;    
 const int pin_MotorR_2 = 17;  
 
-const int pin_MotorL_1 = 18;
+const int pin_MotorL_1 = 5;
 const int pin_MotorL_2 = 19;
 
 const int MotorR_1 = 0;
@@ -70,26 +67,27 @@ void loop() {
   a=0;
 */
 
+
   set_pwm(0, 'F', 'L');
   set_pwm(0, 'F', 'R');
 
 
-  delay(5000);
+  delay(500);
 
   set_pwm(1023, 'F', 'L');
   set_pwm(1023, 'F', 'R');
 
-  delay(5000);
+  delay(500);
 
   set_pwm(0, 'B', 'L');
   set_pwm(0, 'B', 'R');
 
-  delay(5000);
+  delay(500);
 
   set_pwm(1023, 'B', 'L');
   set_pwm(1023, 'B', 'R');
 
-  delay(5000);
+  delay(500);
 
   //void analogWriteResolution(uint8_t pin, uint8_t resolution);
   //void analogWriteFrequency(uint8_t pin, uint32_t freq);
