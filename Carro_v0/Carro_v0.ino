@@ -1,13 +1,9 @@
 
-#include <driver/ledc.h>
-
-const int ReadPin=14;
-const int WritePin=12;
-
+/*     MOTORS       */
 const int pin_MotorR_1 = 16;    
 const int pin_MotorR_2 = 17;  
 
-const int pin_MotorL_1 = 18;
+const int pin_MotorL_1 = 5;
 const int pin_MotorL_2 = 19;
 
 const int MotorR_1 = 0;
@@ -16,96 +12,97 @@ const int MotorR_2 = 1;
 const int MotorL_1 = 2;
 const int MotorL_2 = 3;
 
+const int resolution = 10;
+const int maxpwm = 1024 - 1;
+
+volatile int Percent_R = 0;
+volatile int Percent_L = 0;
+
+const int MAX_PERCENT_R = 100;
+const int MAX_PERCENT_L = 100;
+/*    END OF MOTORS   */
+
+
+/*     IR SENSOR       */
+
+const int IR_0 = 12;
+const int IR_1 = 14;
+const int IR_2 = 27;
+const int IR_3 = 26;
+const int IR_4 = 25;
+
+const int IR_enable = 33;
+
+int readings[5] = {0, 0, 0, 0, 0};
+
+
+/*    END OF IR SENSOR   */
+const int delaytime = 200;
+
 void set_pwm(int pwm, char dir, char motor);
+int percent_to_pwm(int percent);
+void read_IR();
 
-//Interrupts
-struct Button {
-	const uint8_t PIN;
-	uint32_t numberKeyPresses;
-	bool pressed;
-};
-
-Button button1 = {18, 0, false};
-
+/*
 void IRAM_ATTR isr() {
 	button1.numberKeyPresses++;
 	button1.pressed = true;
 }
-
+*/
 
 void setup() {
-  // put your setup code here, to run once:
-  ledcAttachChannel(pin_MotorR_1, 2000, 10, MotorR_1);
-  ledcAttachChannel(pin_MotorR_2, 2000, 10, MotorR_2);
-  ledcAttachChannel(pin_MotorL_1, 2000, 10, MotorL_1);
-  ledcAttachChannel(pin_MotorL_2, 2000, 10, MotorL_2);
+
+  //MOTORS
+  
+  ledcAttachChannel(pin_MotorR_1, 2000, resolution, MotorR_1);
+  ledcAttachChannel(pin_MotorR_2, 2000, resolution, MotorR_2);
+  ledcAttachChannel(pin_MotorL_1, 2000, resolution, MotorL_1);
+  ledcAttachChannel(pin_MotorL_2, 2000, resolution, MotorL_2);
 
   Serial.begin(115200);
 
-  //initialize motors at 0
-  set_pwm(0, 'F', 'L');
-  set_pwm(0, 'F', 'R');
+  //Initialize motors at 0
+  set_pwm(Percent_L, 'F', 'L');
+  set_pwm(Percent_R, 'F', 'R');
+
+  //END OF MOTORS
 
 
 
-//Interrupts
-pinMode(button1.PIN, INPUT_PULLUP);
-attachInterrupt(button1.PIN, isr, FALLING);
+  //IR SENSOR
+  pinMode(IR_0, INPUT_PULLUP);
+  pinMode(IR_1, INPUT_PULLUP);
+  pinMode(IR_2, INPUT_PULLUP);
+  pinMode(IR_3, INPUT_PULLUP);
+  pinMode(IR_4, INPUT_PULLUP);
+  pinMode(IR_enable, OUTPUT);
+
+  digitalWrite(IR_enable, HIGH);
+  //END OF IR SENSOR
+
 //
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-
-/*  
-  digitalWrite(WritePin, HIGH);
-  //void analogWrite(2, 180);
-  int a=digitalRead(ReadPin);
-
-  if (a==1){
-    Serial.println("Hello World");
-  }
-  else 
-    Serial.println("Not Hello World");
-  a=0;
-*/
-
-  set_pwm(0, 'F', 'L');
-  set_pwm(0, 'F', 'R');
+void loop() 
+{
 
 
-  delay(5000);
 
-  set_pwm(1023, 'F', 'L');
-  set_pwm(1023, 'F', 'R');
 
-  delay(5000);
 
-  set_pwm(0, 'B', 'L');
-  set_pwm(0, 'B', 'R');
-
-  delay(5000);
-
-  set_pwm(1023, 'B', 'L');
-  set_pwm(1023, 'B', 'R');
-
-  delay(5000);
-
-  //void analogWriteResolution(uint8_t pin, uint8_t resolution);
-  //void analogWriteFrequency(uint8_t pin, uint32_t freq);
-/*
-	if (button1.pressed) {
-		Serial.printf("Button has been pressed %u times\n", button1.numberKeyPresses);
-		button1.pressed = false;
-	}
-*/
 }
 
 
-void set_pwm(int pwm, char dir, char motor){
-  //pwm 0 a 255
-  //dir F or B
-  //motor R or L
+/*
+percent 0 to 100
+dir F or B
+motor R or L
+*/
+void set_pwm(int percent, char dir, char motor){
+  
+
+  int pwm = percent_to_pwm(percent);
+  Serial.println(pwm);
 
   if( dir == 'F' and motor == 'R' )
   {
@@ -130,4 +127,104 @@ void set_pwm(int pwm, char dir, char motor){
     ledcWrite(pin_MotorL_1 , 0);
     ledcWrite(pin_MotorL_2 , pwm);
   }
+}
+
+
+int percent_to_pwm(int percent){
+  int pwm = percent * maxpwm / 100;
+  return pwm;
+}
+
+void read_IR()
+{
+
+  readings[0] = digitalRead(IR_0);
+  readings[1] = digitalRead(IR_1);
+  readings[2] = digitalRead(IR_2);
+  readings[3] = digitalRead(IR_3);
+  readings[4] = digitalRead(IR_4);
+
+}
+
+void control()
+{
+  if (readings[0] == 1)
+  {
+    if (Percent_R > 0)
+    {
+      Percent_R = Percent_R - 5;
+      set_pwm(Percent_R, 'F', 'R');
+    }
+    if (Percent_L < MAX_PERCENT_L)
+    {
+      Percent_L = Percent_L + 5;
+      set_pwm(Percent_L, 'F', 'L');
+    }
+  }
+
+  if (readings[1] == 1)
+  {
+    if (Percent_R > 0)
+    { 
+      Percent_R = Percent_R - 2;
+      set_pwm(Percent_R, 'F', 'R');
+    }
+    if (Percent_L < MAX_PERCENT_L)
+    {
+      Percent_L = Percent_L + 2;
+      set_pwm(Percent_L, 'F', 'L');
+    }
+  }
+
+  if (readings[2] == 1)
+  {
+    if (Percent_R < MAX_PERCENT_R)
+    {
+      Percent_R = Percent_R + 5;
+      set_pwm(Percent_R, 'F', 'R');
+    }
+
+    if (Percent_L < MAX_PERCENT_L)
+    {
+      Percent_L = Percent_L + 5;
+      set_pwm(Percent_L, 'F', 'L');
+    }
+  }
+
+  if (readings[3] == 1)
+  {
+    if (Percent_R < MAX_PERCENT_R)
+    {
+      Percent_R = Percent_R + 2;
+      set_pwm(Percent_R, 'F', 'R');
+    }
+    if (Percent_L > 0)
+    {
+      Percent_L = Percent_L - 2;
+      set_pwm(Percent_L, 'F', 'L');
+    }
+  }
+
+  if (readings[4] == 1)
+  {
+    if (Percent_R < MAX_PERCENT_R)
+    {
+      Percent_R = Percent_R + 5;
+      set_pwm(Percent_R, 'F', 'R');
+    }
+    if (Percent_L > 0)
+    {
+      Percent_L = Percent_L - 5;
+      set_pwm(Percent_L, 'F', 'L');
+    }
+  }
+
+  if (readings[0] == 1 and readings[1] == 1 and readings[2] == 1 and readings[3] == 1 and readings[4] == 1)
+  {
+    Percent_R = 0;
+    Percent_L = 0;
+    set_pwm(Percent_R, 'F', 'R');
+    set_pwm(Percent_L, 'F', 'L');
+  }
+
 }
