@@ -48,9 +48,9 @@ const float smallDeviation = .16;
 
 /*         LDR           */
 
-const int LDR_0 = 26;
-const int LDR_1 = 27;
-const int LDR_2 = 14;
+const int LDR_0 = 15;
+const int LDR_1 = 2;
+const int LDR_2 = 0;
 
 const int LDR_Go = 900;
 
@@ -110,6 +110,16 @@ void setup()
   pinMode(IR_4, INPUT);
 
   //END OF IR SENSOR
+
+
+  //LDR
+
+  pinMode(LDR_0, OUPUT);
+  pinMode(LDR_1, INPUT);
+  pinMode(LDR_2, INPUT_PULLDOWN);
+
+  //END OF LDR
+
 
 //
 
