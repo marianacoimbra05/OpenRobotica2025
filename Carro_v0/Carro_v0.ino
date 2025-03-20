@@ -1,10 +1,10 @@
 
 /*     MOTORS       */
-const int pin_MotorR_1 = 5;    
-const int pin_MotorR_2 = 19;  
+const int pin_MotorR_1 = 27;    
+const int pin_MotorR_2 = 26;  
 
-const int pin_MotorL_1 = 16;
-const int pin_MotorL_2 = 17;
+const int pin_MotorL_1 = 32;
+const int pin_MotorL_2 = 33;
 
 const int MotorR_1 = 0;
 const int MotorR_2 = 1;
@@ -12,7 +12,7 @@ const int MotorR_2 = 1;
 const int MotorL_1 = 2;
 const int MotorL_2 = 3;
 
-const int Motor_enable = 4;
+const int Motor_enable = 25;
 
 const int resolution = 10;
 const float maxpwm = 1024 - 1;
@@ -27,18 +27,26 @@ const float MAX_PERCENT_L = 100;
 
 /*     IR SENSOR       */
 
-const int IR_0 = 12;
-const int IR_1 = 14;
-const int IR_2 = 27;
-const int IR_3 = 26;
-const int IR_4 = 25;
-
-const int IR_enable = 33;
+const int IR_0 = 21;
+const int IR_1 = 19;
+const int IR_2 = 18;
+const int IR_3 = 5;
+const int IR_4 = 17;
 
 int readings[5] = {0, 0, 0, 0, 0};
 
 
 /*    END OF IR SENSOR   */
+
+/*         LDR           */
+
+const int LDR_0 = 26;
+const int LDR_1 = 27;
+const int LDR_2 = 14;
+
+const int LDR_Go = 900;
+/*    END OF LDR         */
+
 const int delaytime = 200;
 
 void set_pwm(float pwm, char dir, char motor);
@@ -79,14 +87,12 @@ void setup() {
 
 
   //IR SENSOR
-  pinMode(IR_0, INPUT_PULLUP);
-  pinMode(IR_1, INPUT_PULLUP);
-  pinMode(IR_2, INPUT_PULLUP);
-  pinMode(IR_3, INPUT_PULLUP);
-  pinMode(IR_4, INPUT_PULLUP);
-  pinMode(IR_enable, OUTPUT);
+  pinMode(IR_0, INPUT);
+  pinMode(IR_1, INPUT);
+  pinMode(IR_2, INPUT);
+  pinMode(IR_3, INPUT);
+  pinMode(IR_4, INPUT);
 
-  digitalWrite(IR_enable, HIGH);
   //END OF IR SENSOR
 
 //
@@ -96,9 +102,17 @@ Serial.begin(115200);
 
 void loop() 
 {
-
-set_pwm(98.5, 'F', 'R');
-set_pwm(98.2, 'B', 'L');
+  read_IR();
+  Serial.print("IR0: ");
+  Serial.print(readings[0]);
+  Serial.print("IR1: ");
+  Serial.print(readings[1]);
+  Serial.print("IR2: ");
+  Serial.print(readings[2]);
+  Serial.print("IR3: ");
+  Serial.print(readings[3]);
+  Serial.print("IR4: ");
+  Serial.println(readings[4]);
 
 }
 
