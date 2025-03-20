@@ -73,6 +73,8 @@ void IRAM_ATTR isr() {
 }
 */
 
+bool start=true;
+
 void setup() 
 {
 
@@ -90,16 +92,11 @@ void setup()
   ledcAttachChannel(pin_MotorL_1, 500, resolution, MotorL_1);
   ledcAttachChannel(pin_MotorL_2, 500, resolution, MotorL_2);
 
-  digitalWrite(Motor_enable, HIGH);
-
-  //Initialize motors at 0
+  //Initialize motors at 
   set_pwm(MAX_PERCENT_L/2, 'F', 'L');
   set_pwm(MAX_PERCENT_R/2, 'F', 'R');
 
-  //go();
-
   //END OF MOTORS
-
 
 
   //IR SENSOR
@@ -118,6 +115,13 @@ Serial.begin(115200);
 
 void loop() 
 {
+  
+  if(start==true){
+    LDR_value[1] = analogRead(LDR_1); 
+    go();
+    start=false;
+  }
+
   read_IR();
 
   if( control() == 0) delay(100000);
@@ -342,9 +346,6 @@ void go()
 {
   if (LDR_value[1] > LDR_Go){
     digitalWrite(Motor_enable, HIGH);
-
-    set_pwm(Percent_L, 'F', 'L');
-    set_pwm(Percent_R, 'F', 'R');
   }
 
 }
