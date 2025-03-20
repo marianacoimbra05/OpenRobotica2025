@@ -1,10 +1,10 @@
 
 /*     MOTORS       */
-const int pin_MotorR_1 = 16;    
-const int pin_MotorR_2 = 17;  
+const int pin_MotorR_1 = 5;    
+const int pin_MotorR_2 = 19;  
 
-const int pin_MotorL_1 = 5;
-const int pin_MotorL_2 = 19;
+const int pin_MotorL_1 = 16;
+const int pin_MotorL_2 = 17;
 
 const int MotorR_1 = 0;
 const int MotorR_2 = 1;
@@ -12,14 +12,16 @@ const int MotorR_2 = 1;
 const int MotorL_1 = 2;
 const int MotorL_2 = 3;
 
+const int Motor_enable = 4;
+
 const int resolution = 10;
-const int maxpwm = 1024 - 1;
+const float maxpwm = 1024 - 1;
 
-volatile int Percent_R = 0;
-volatile int Percent_L = 0;
+volatile float Percent_R = 0;
+volatile float Percent_L = 0;
 
-const int MAX_PERCENT_R = 100;
-const int MAX_PERCENT_L = 100;
+const float MAX_PERCENT_R = 100;
+const float MAX_PERCENT_L = 100;
 /*    END OF MOTORS   */
 
 
@@ -39,8 +41,8 @@ int readings[5] = {0, 0, 0, 0, 0};
 /*    END OF IR SENSOR   */
 const int delaytime = 200;
 
-void set_pwm(int pwm, char dir, char motor);
-int percent_to_pwm(int percent);
+void set_pwm(float pwm, char dir, char motor);
+int percent_to_pwm(float percent);
 void read_IR();
 
 /*
@@ -54,12 +56,19 @@ void setup() {
 
   //MOTORS
   
+  pinMode(pin_MotorL_1, OUTPUT);
+  pinMode(pin_MotorL_2, OUTPUT);
+  pinMode(pin_MotorR_1, OUTPUT);
+  pinMode(pin_MotorR_2, OUTPUT);
+  pinMode(Motor_enable, OUTPUT);
+
+
   ledcAttachChannel(pin_MotorR_1, 2000, resolution, MotorR_1);
   ledcAttachChannel(pin_MotorR_2, 2000, resolution, MotorR_2);
   ledcAttachChannel(pin_MotorL_1, 2000, resolution, MotorL_1);
   ledcAttachChannel(pin_MotorL_2, 2000, resolution, MotorL_2);
 
-  Serial.begin(115200);
+  digitalWrite(Motor_enable, HIGH);
 
   //Initialize motors at 0
   set_pwm(Percent_L, 'F', 'L');
@@ -81,14 +90,15 @@ void setup() {
   //END OF IR SENSOR
 
 //
+
+Serial.begin(115200);
 }
 
 void loop() 
 {
 
-
-
-
+set_pwm(98.5, 'F', 'R');
+set_pwm(98.2, 'B', 'L');
 
 }
 
@@ -98,11 +108,10 @@ percent 0 to 100
 dir F or B
 motor R or L
 */
-void set_pwm(int percent, char dir, char motor){
+void set_pwm(float percent, char dir, char motor){
   
 
   int pwm = percent_to_pwm(percent);
-  Serial.println(pwm);
 
   if( dir == 'F' and motor == 'R' )
   {
@@ -130,8 +139,10 @@ void set_pwm(int percent, char dir, char motor){
 }
 
 
-int percent_to_pwm(int percent){
+int percent_to_pwm(float percent){
   int pwm = percent * maxpwm / 100;
+  Serial.print("PWM: ");
+  Serial.println(pwm);
   return pwm;
 }
 
