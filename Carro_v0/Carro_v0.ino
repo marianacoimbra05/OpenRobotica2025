@@ -430,14 +430,14 @@ void control_PID()
   if(PID > 0)
   { //Virar à esquerda
     
-    Percent_L = Percent_L + PID; //motor esquerdo mais lento
-    Percent_R = Percent_R - PID; //motor direito mais rápido
+    Percent_L = Percent_L - PID; //motor esquerdo mais lento
+    Percent_R = Percent_R + PID; //motor direito mais rápido
 
   } else if (PID < 0)
   { //virar à direita
 
-    Percent_L = Percent_L + PID; //motor esquerdo mais rápido
-    Percent_R = Percent_R - PID; //motor direito mais lento
+    Percent_L = Percent_L - PID; //motor esquerdo mais rápido
+    Percent_R = Percent_R + PID; //motor direito mais lento
 
   } 
 
