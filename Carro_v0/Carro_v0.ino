@@ -93,10 +93,11 @@ const int LDR_0 = 5;
 const int LDR_1 = 2;
 const int LDR_2 = 0;
 
-const int LDR_Go = 1800;
+int LDR_GoV;
 int Go = 0;
 int Go_flag = 0;
-int LDR_value = 10000;
+int LDR_value;
+
 
 /*       END OF LDR      */
 
@@ -113,6 +114,7 @@ void calc_PID();
 void motor_PID();
 void go();
 void checkEnd();
+void LDR_Go();
 
 
 
@@ -206,6 +208,7 @@ Serial.begin(115200);
 
 void loop() 
 {
+  take_avg();
   go();
   while(1);
 }
@@ -397,12 +400,12 @@ void go()
   while(1)
   {
 
-    if(Go > 2) LDR_value = analogRead(LDR_1);
+    LDR_value = analogRead(LDR_1);
 
     Serial.print("LDR: ");
     Serial.println(LDR_value);
 
-    if (LDR_value < LDR_Go){
+    if (LDR_value < LDR_GoV){
       digitalWrite(Motor_enable, 1);
 
       Go_flag = 1;
@@ -426,6 +429,22 @@ void checkEnd()
   set_pwm(0, 'L');
   delay(100000);
   }
+
+
+}
+
+void take_avg()
+{
+  int total = 0;
+  for(int i = 0; i < 100; i++) 
+  {
+    total += analogRead(LDR_1);
+    delay(5);
+  }
+  LDR_GoV = (total / 100)*0.8;
+
+  Serial.print("Done calib with avg: ");
+  Serial.println(LDR_GoV);
 
 
 }
