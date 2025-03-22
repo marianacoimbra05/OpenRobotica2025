@@ -8,12 +8,12 @@ const int DEBUG = 0;
 const int delaytime = 5;
 
 /*         PID         */
-const float Kp    = 5; //3
-const float Kd    = 1;
-const float Ki    = 0.1; //.5
+const float Kp    = 10; //10
+const float Kd    = 1;  //1
+const float Ki    = 0.5; //.5
 
-const float Kp_motor = 2.1;   //1.25
-const float Kd_motor = 0.5;   //.25
+const float Kp_motor = 2.1;   //2.1
+const float Kd_motor = 0.5;   //.5
 const float Ki_motor = 0.0;
 
 /*       END OF PID      */
@@ -97,6 +97,7 @@ int LDR_value[3] = {0,0,0};
 
 /*       END OF LDR      */
 
+int counter;
 
 
 /*         Function declaration         */
@@ -229,6 +230,7 @@ void loop()
 
 void timer_callback(void* arg) 
 {
+  counter ++;
   
   read_IR();
 
@@ -237,7 +239,7 @@ void timer_callback(void* arg)
   
   control_PID();
   
-  checkEnd();
+  if(counter > 100) checkEnd();
   
   Serial.print("PcR: ");
   Serial.print(Percent_R);
