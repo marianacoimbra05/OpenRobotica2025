@@ -5,12 +5,15 @@ esp_timer_handle_t timer;
 
 
 const int DEBUG = 0;
-const int delaytime = 5;
+const int delaytime = 4;
 /*         PID         */
-const float Kp = 2;
-const float Kd = .5;
-const float Ki = .2;
+const float Kp = 0; //3
+const float Kd = 0;
+const float Ki = 0; //.5
+const float Kenc = 2;
 
+
+const float smallDeviation = .2;  
 
 float P, I, D, PID;
 
@@ -40,14 +43,23 @@ const int Motor_enable = 25;
 const int resolution = 12;
 const float maxpwm = 4095 - 1;
 
-const float MAX_PERCENT_R = 100;
-const float MAX_PERCENT_L = 100;
+const float MAX_PERCENT_R = 80;
+const float MAX_PERCENT_L = 80;
 
-volatile float Percent_R = MAX_PERCENT_R/2;
-volatile float Percent_L = MAX_PERCENT_L/2;
+volatile float BaseSpeedR = 30;
+volatile float BaseSpeedL = 32;
+
+volatile float Percent_R = BaseSpeedR;
+volatile float Percent_L = BaseSpeedL;
 
 const float MIN_PERCENT_R = 10;
 const float MIN_PERCENT_L = 10;
+
+const int ENC_R_pin = 12;
+const int ENC_L_pin = 14;
+
+int R_Encoder = 0, L_Encoder = 0;
+
 /*    END OF MOTORS   */
 
 
@@ -62,7 +74,7 @@ const int IR_4 = 17;
 int readings[5] = {1, 1, 0, 1, 1};
 
 const float bigDeviation = .30;
-const float smallDeviation = .2;  
+
 
 /*    END OF IR SENSOR   */
 
@@ -80,9 +92,6 @@ int LDR_value[3] = {0,0,0};
 
 
 
-
-
-
 /*         Function declaration         */
 void set_pwm(float pwm, char motor);
 int percent_to_pwm(float percent);
@@ -93,8 +102,24 @@ void calc_PID();
 void go();
 
 
+
+// Define interrupt service routines (ISRs)
+void IRAM_ATTR Right_Encoder_Int() 
+{
+  R_Encoder++;
+}
+
+void IRAM_ATTR Left_Encoder_Int() 
+{
+  L_Encoder++;
+}
+
+
+
 void setup() 
 {
+Serial.begin(115200);
+
     // Configure the timer
   esp_timer_create_args_t timer_args = {
     .callback = &timer_callback,
@@ -105,6 +130,14 @@ void setup()
 
   // Start the timer (10ms = 10000 microseconds)
   esp_timer_start_periodic(timer, delaytime * 1000);
+
+  // Configure interrupt pins as inputs
+  pinMode(ENC_R_pin, INPUT_PULLUP); // Or INPUT, INPUT_PULLDOWN, depending on your circuit
+  pinMode(ENC_L_pin, INPUT_PULLUP); // Or INPUT, INPUT_PULLDOWN, depending on your circuit
+
+  // Attach interrupts to the pins
+  attachInterrupt(digitalPinToInterrupt(ENC_R_pin), Right_Encoder_Int, FALLING); // Or RISING, CHANGE, LOW, HIGH, depending on your needs.
+  attachInterrupt(digitalPinToInterrupt(ENC_L_pin), Left_Encoder_Int , FALLING); // Or RISING, CHANGE, LOW, HIGH, depending on your needs.
 
   //MOTORS
   
@@ -152,7 +185,7 @@ void setup()
   //END OF LDR
 
 
-Serial.begin(115200);
+
 }
 
 void loop() 
@@ -187,9 +220,11 @@ void loop()
 
 void timer_callback(void* arg) 
 {
+  
   read_IR();
   calc_PID();
   control_PID();
+  
 }
 
 /*
@@ -203,7 +238,8 @@ void set_pwm(float percent, char motor)
   if (percent > MAX_PERCENT_R and motor == 'R') percent = MAX_PERCENT_R;
   if (percent > MAX_PERCENT_L and motor == 'L') percent = MAX_PERCENT_L;
 
-
+  if (percent < -MAX_PERCENT_R and motor == 'R') percent = -MAX_PERCENT_R;
+  if (percent < -MAX_PERCENT_L and motor == 'L') percent = -MAX_PERCENT_L;
 
 
   int pwm = percent_to_pwm(percent);
@@ -230,7 +266,7 @@ void set_pwm(float percent, char motor)
     if (percent < 0)
     {
       ledcWrite(pin_MotorR_1 , 0);
-      ledcWrite(pin_MotorR_2 , pwm);  
+      ledcWrite(pin_MotorR_2 , -pwm);  
     }
     
   }
@@ -246,7 +282,7 @@ void set_pwm(float percent, char motor)
     if (percent < 0)
     {
       ledcWrite(pin_MotorL_1 , 0);
-      ledcWrite(pin_MotorL_2 , pwm);  
+      ledcWrite(pin_MotorL_2 , -pwm);  
     }
     
   }
@@ -401,13 +437,13 @@ void calc_PID()
 
   error = (readings[0] * (-2) + readings[1] * (-1) + readings[2] * (0) + readings[3] * (1) + readings[4] * (2));
 
-
   P = error;
   I = I + error;
   D = lastError - error;
   lastError = error;
   if(I > max_windup) I = max_windup;
   if(I < -max_windup) I = -max_windup;
+
 
   PID = P * Kp + I * Ki + D * Kd;
 
@@ -426,25 +462,28 @@ void calc_PID()
 
 void control_PID()
 {
+  int count = 0;
+
+  for(int i = 0; i < 5; i++) if (readings[i] == 0) count++;
   
-  if(PID > 0)
+  if(error < 0)
   { //Virar à esquerda
     
-    Percent_L = Percent_L - PID; //motor esquerdo mais lento
-    Percent_R = Percent_R + PID; //motor direito mais rápido
+    Percent_L = BaseSpeedL - PID / count ; //motor esquerdo mais lento
+    Percent_R = BaseSpeedR + PID / count ; //motor direito mais rápido
 
-  } else if (PID < 0)
+  } else if (error > 0)
   { //virar à direita
 
-    Percent_L = Percent_L - PID; //motor esquerdo mais rápido
-    Percent_R = Percent_R + PID; //motor direito mais lento
+    Percent_L = BaseSpeedL - PID / count ; //motor esquerdo mais rápido
+    Percent_R = BaseSpeedR + PID / count ; //motor direito mais lento
 
   } 
 
   if (error == 0)
   {
-    Percent_L = Percent_L + smallDeviation;
-    Percent_R = Percent_R + smallDeviation;
+    Percent_L = Percent_L; //+ smallDeviation;
+    Percent_R = Percent_R; //+ smallDeviation;
   }
 
 
@@ -477,3 +516,4 @@ void go()
   }
 
 }
+
