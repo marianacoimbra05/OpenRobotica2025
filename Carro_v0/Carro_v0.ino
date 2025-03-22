@@ -5,22 +5,32 @@ esp_timer_handle_t timer;
 
 
 const int DEBUG = 0;
-const int delaytime = 4;
+const int delaytime = 5;
+
 /*         PID         */
-const float Kp = 0; //3
-const float Kd = 0;
-const float Ki = 0; //.5
-const float Kenc = 2;
+const float Kp    = 5; //3
+const float Kd    = 1;
+const float Ki    = 0.1; //.5
+
+const float Kp_motor = 2.1;   //1.25
+const float Kd_motor = 0.5;   //.25
+const float Ki_motor = 0.0;
+
+/*       END OF PID      */
 
 
 const float smallDeviation = .2;  
 
 float P, I, D, PID;
+float P_motor, I_motor, D_motor, PID_motor;
 
 float lsp, rsp;
 
 float error = 0, lastError = 0;
+float error_motor = 0, lastError_motor = 0;
+
 float max_windup = 50;
+float max_windup_motor = 10;
 
 void timer_callback(void* arg);
 /*       END OF PID      */
@@ -43,19 +53,16 @@ const int Motor_enable = 25;
 const int resolution = 12;
 const float maxpwm = 4095 - 1;
 
-const float MAX_PERCENT_R = 80;
-const float MAX_PERCENT_L = 80;
+const float MAX_PERCENT_R = 100;
+const float MAX_PERCENT_L = 100;
 
-volatile float BaseSpeedR = 30;
-volatile float BaseSpeedL = 32;
+volatile float BaseSpeedR = 100;
+volatile float BaseSpeedL = 100;
 
 volatile float Percent_R = BaseSpeedR;
 volatile float Percent_L = BaseSpeedL;
 
-const float MIN_PERCENT_R = 10;
-const float MIN_PERCENT_L = 10;
-
-const int ENC_R_pin = 12;
+const int ENC_R_pin = 13;
 const int ENC_L_pin = 14;
 
 int R_Encoder = 0, L_Encoder = 0;
@@ -99,7 +106,9 @@ void read_IR();
 int control_if();
 void control_PID();
 void calc_PID();
+void motor_PID();
 void go();
+void checkEnd();
 
 
 
@@ -222,9 +231,33 @@ void timer_callback(void* arg)
 {
   
   read_IR();
+
+  motor_PID();
   calc_PID();
+  
   control_PID();
   
+  checkEnd();
+  
+  Serial.print("PcR: ");
+  Serial.print(Percent_R);
+  Serial.print("  PcL: ");
+  Serial.print(Percent_L);
+  Serial.print("  PID: ");
+  Serial.println(PID + PID_motor);
+
+  Serial.print("  ");
+  Serial.print(readings[0]);
+  Serial.print("  ");
+  Serial.print(readings[1]);
+  Serial.print("  ");
+  Serial.print(readings[2]);
+  Serial.print("  ");
+  Serial.print(readings[3]);
+  Serial.print("  ");
+  Serial.println(readings[4]);
+
+
 }
 
 /*
@@ -259,14 +292,14 @@ void set_pwm(float percent, char motor)
   {
     if (percent >= 0)
     {
-      ledcWrite(pin_MotorR_1 , pwm);
-      ledcWrite(pin_MotorR_2 , 0);  
+      ledcWrite(pin_MotorR_1 , 0);
+      ledcWrite(pin_MotorR_2 , pwm);  
     }
 
     if (percent < 0)
     {
-      ledcWrite(pin_MotorR_1 , 0);
-      ledcWrite(pin_MotorR_2 , -pwm);  
+      ledcWrite(pin_MotorR_1 , -pwm);
+      ledcWrite(pin_MotorR_2 , 0);  
     }
     
   }
@@ -275,14 +308,14 @@ void set_pwm(float percent, char motor)
   {
     if (percent >= 0)
     {
-      ledcWrite(pin_MotorL_1 , pwm);
-      ledcWrite(pin_MotorL_2 , 0);  
+      ledcWrite(pin_MotorL_1 , 0);
+      ledcWrite(pin_MotorL_2 , pwm);  
     }
 
     if (percent < 0)
     {
-      ledcWrite(pin_MotorL_1 , 0);
-      ledcWrite(pin_MotorL_2 , -pwm);  
+      ledcWrite(pin_MotorL_1 , -pwm);
+      ledcWrite(pin_MotorL_2 , 0);  
     }
     
   }
@@ -324,114 +357,6 @@ void read_IR()
 
 }
 
-int control_if()
-{
-  //Left in the black line
-  //Correct to right 
-  if (readings[0] == 0)
-  {
-
-    if (DEBUG) Serial.println("A lot to the left");
-
-    if (Percent_L - bigDeviation > MIN_PERCENT_L)
-    {
-      Percent_L = Percent_L - bigDeviation;
-      set_pwm(Percent_L, 'L');
-    }
-    if (Percent_R + bigDeviation < MAX_PERCENT_R)
-    {
-      Percent_R = Percent_R + bigDeviation;
-      set_pwm(Percent_R, 'R');
-    }
-  }
-
-  if (readings[1] == 0)
-  {
-    if (DEBUG) Serial.println("A little to the left");
-
-    if (Percent_L - smallDeviation > MIN_PERCENT_L)
-    { 
-      Percent_L = Percent_L - smallDeviation;
-      set_pwm(Percent_L, 'L');
-    }
-    if (Percent_R + smallDeviation < MAX_PERCENT_R)
-    {
-      Percent_R = Percent_R + smallDeviation;
-      set_pwm(Percent_R, 'R');
-    }
-  }
-
-  if (readings[2] == 0)
-  {
-
-    if (DEBUG) Serial.println("In the middle");
-
-    if (Percent_R + bigDeviation< MAX_PERCENT_R)
-    {
-      Percent_R = Percent_R + bigDeviation;
-      set_pwm(Percent_R, 'R');
-    }
-
-    if (Percent_L + bigDeviation < MAX_PERCENT_L)
-    {
-      Percent_L = Percent_L + bigDeviation;
-      set_pwm(Percent_L, 'L');
-    }
-  }
-
-  //Right in the black line
-  //Correct to left
-
-  if (readings[3] == 0)
-  {
-
-    if (DEBUG) Serial.println("A little to the right");
-
-    if (Percent_L + smallDeviation < MAX_PERCENT_L)
-    {
-      Percent_L = Percent_L + smallDeviation;
-      set_pwm(Percent_L, 'L');
-    }
-    if (Percent_R - smallDeviation > MIN_PERCENT_R)
-    {
-      Percent_R = Percent_R - smallDeviation;
-      set_pwm(Percent_R, 'R');
-    }
-  }
-
-  if (readings[4] == 0)
-  {
-
-    if (DEBUG) Serial.println("A lot to the right");
-
-    if (Percent_L + bigDeviation < MAX_PERCENT_L)
-    {
-      Percent_L = Percent_L + bigDeviation;
-      set_pwm(Percent_L, 'L');
-    }
-    if (Percent_R - bigDeviation > MIN_PERCENT_R)
-    {
-      Percent_R = Percent_R - bigDeviation;
-      set_pwm(Percent_R, 'R');
-    }
-  }
-
-  if (readings[0] == 0 and readings[1] == 0 and readings[2] == 0 and readings[3] == 0 and readings[4] == 0)
-  {
-
-    if (DEBUG) Serial.println("Stopping");
-
-    Percent_R = 0;
-    Percent_L = 0;
-    set_pwm(Percent_R, 'R');
-    set_pwm(Percent_L, 'L');
-    return 0;
-  }
-
-  return 1;
-
-}
-
 void calc_PID()
 {
 
@@ -447,49 +372,35 @@ void calc_PID()
 
   PID = P * Kp + I * Ki + D * Kd;
 
-  if (DEBUG) 
-  {
-    Serial.print("P: ");
-    Serial.println(P);
-    Serial.print("I: ");
-    Serial.println(I);
-    Serial.print("D: ");
-    Serial.println(D);
-    Serial.print("PID: ");
-    Serial.println(PID);
-  }
 }
 
 void control_PID()
 {
-  int count = 0;
-
-  for(int i = 0; i < 5; i++) if (readings[i] == 0) count++;
   
-  if(error < 0)
-  { //Virar à esquerda
-    
-    Percent_L = BaseSpeedL - PID / count ; //motor esquerdo mais lento
-    Percent_R = BaseSpeedR + PID / count ; //motor direito mais rápido
+  Percent_L = BaseSpeedL - PID - PID_motor;
+  Percent_R = BaseSpeedR + PID + PID_motor;
 
-  } else if (error > 0)
-  { //virar à direita
-
-    Percent_L = BaseSpeedL - PID / count ; //motor esquerdo mais rápido
-    Percent_R = BaseSpeedR + PID / count ; //motor direito mais lento
-
-  } 
-
-  if (error == 0)
-  {
-    Percent_L = Percent_L; //+ smallDeviation;
-    Percent_R = Percent_R; //+ smallDeviation;
-  }
-
+  Percent_L = constrain(Percent_L, 0, MAX_PERCENT_L);
+  Percent_R = constrain(Percent_R, 0, MAX_PERCENT_R);
 
   set_pwm(Percent_L, 'L' );
   set_pwm(Percent_R, 'R' );
 
+
+}
+
+void motor_PID()
+{
+  error_motor = L_Encoder - R_Encoder + PID;
+
+  P_motor = error_motor;
+  I_motor = I_motor + error_motor;
+  D_motor = lastError_motor - error_motor;
+  lastError_motor = error_motor;
+  if(I > max_windup_motor) I = max_windup_motor;
+  if(I < -max_windup_motor) I = -max_windup_motor;
+
+  PID_motor = P_motor * Kp_motor + I_motor * Ki_motor + D_motor * Kd_motor;
 
 }
 
@@ -517,3 +428,18 @@ void go()
 
 }
 
+
+void checkEnd()
+{
+  int count = 0;
+  for(int i = 0; i < 5 ; i++) if (readings[i] == 0) count ++;
+
+  if (count == 5)
+  {
+  set_pwm(0, 'R');
+  set_pwm(0, 'L');
+  delay(100000);
+  }
+
+
+}
