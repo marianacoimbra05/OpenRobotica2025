@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <esp_timer.h>
+#include <WiFi.h>
+
 
 esp_timer_handle_t timer;
 
@@ -91,9 +93,10 @@ const int LDR_0 = 5;
 const int LDR_1 = 2;
 const int LDR_2 = 0;
 
-const int LDR_Go = 90000;
-
-int LDR_value[3] = {0,0,0};
+const int LDR_Go = 1800;
+int Go = 0;
+int Go_flag = 0;
+int LDR_value = 10000;
 
 /*       END OF LDR      */
 
@@ -130,16 +133,9 @@ void setup()
 {
 Serial.begin(115200);
 
-    // Configure the timer
-  esp_timer_create_args_t timer_args = {
-    .callback = &timer_callback,
-    .name = "periodic_timer"
-  };
+  analogReadResolution(12);
+  WiFi.mode(WIFI_OFF); // Disable wifi to reliably use ADC2.
 
-  esp_timer_create(&timer_args, &timer);
-
-  // Start the timer (10ms = 10000 microseconds)
-  esp_timer_start_periodic(timer, delaytime * 1000);
 
   // Configure interrupt pins as inputs
   pinMode(ENC_R_pin, INPUT_PULLUP); // Or INPUT, INPUT_PULLDOWN, depending on your circuit
@@ -168,7 +164,7 @@ Serial.begin(115200);
   set_pwm(0, 'R');
 
 
-  digitalWrite(Motor_enable, 1);
+  digitalWrite(Motor_enable, 0);
 
   //END OF MOTORS
 
@@ -194,43 +190,32 @@ Serial.begin(115200);
   
   //END OF LDR
 
+  // Configure the timer
+  esp_timer_create_args_t timer_args = {
+    .callback = &timer_callback,
+    .name = "periodic_timer"
+  };
+
+  esp_timer_create(&timer_args, &timer);
+
+  // Start the timer (10ms = 10000 microseconds)
+  esp_timer_start_periodic(timer, delaytime * 1000);
 
 
 }
 
 void loop() 
 {
-  /*
   go();
-
-  read_IR();
-
-  if( control() == 0) delay(100000);
-
-  if (DEBUG)
-  {
-  Serial.print("R0: ");
-  Serial.print(readings[0]);
-  Serial.print(" R1: ");
-  Serial.print(readings[1]);
-  Serial.print(" R2: ");
-  Serial.print(readings[2]);
-  Serial.print(" R3: ");
-  Serial.print(readings[3]);
-  Serial.print(" R4: ");
-  Serial.println(readings[4]);
-  }
-
-  delay(delaytime);
-  */
-
-
-
+  while(1);
 }
 
 void timer_callback(void* arg) 
 {
-  counter ++;
+  
+  Go++;
+
+  if(Go_flag == 1) counter ++;
   
   read_IR();
 
@@ -408,28 +393,27 @@ void motor_PID()
 
 void go()
 {
-  int LDR_value = 0;
 
   while(1)
   {
 
-    LDR_value = analogRead(LDR_1);
+    if(Go > 2) LDR_value = analogRead(LDR_1);
 
-    if (DEBUG) 
-    {
     Serial.print("LDR: ");
     Serial.println(LDR_value);
-    }
 
-    if (LDR_value > LDR_Go){
+    if (LDR_value < LDR_Go){
       digitalWrite(Motor_enable, 1);
+
+      Go_flag = 1;
+
       break;
     } 
 
   }
 
-}
 
+}
 
 void checkEnd()
 {
